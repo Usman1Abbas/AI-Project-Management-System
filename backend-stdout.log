@@ -1,0 +1,3 @@
+INFO:     127.0.0.1:57281 - "POST /api/progress/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51263 - "GET /api/progress/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51267 - "POST /api/progress/analyze HTTP/1.1" 200 OK
