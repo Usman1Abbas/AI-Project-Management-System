@@ -1,227 +1,128 @@
-# AI-Driven Project Automation System
+<p align="center">
+  <img src="assets/banner.svg" alt="ProjectPulse — AI project coordination, from scaffold to delivery report" width="100%">
+</p>
 
-An intelligent system that automates project creation, tracks commits, and generates progress summaries using AI.
+<h1 align="center">ProjectPulse</h1>
 
-## Features
+<p align="center"><em>AI project coordination — scaffold the repo, track every commit, and ship LLM-written progress reports.</em></p>
 
-- 🤖 **AI-Powered Project Generation**: LLM generates project structure, skeleton code, and README
-- 🔗 **GitHub Integration**: Automatically creates repos, adds collaborators, and sets up webhooks
-- 📊 **Commit Tracking**: Monitors all commits and tracks contributor activity
-- 📝 **Progress Summaries**: AI analyzes commits and generates actionable progress reports
-- 💬 **Teams Notifications**: Sends updates to Microsoft Teams channels
+<p align="center">
+  <img alt="status" src="https://img.shields.io/badge/status-MVP%20working-1b9c85">
+  <img alt="backend" src="https://img.shields.io/badge/backend-FastAPI%20%C2%B7%20SQLite-0d1b2a">
+  <img alt="frontend" src="https://img.shields.io/badge/frontend-React%20%C2%B7%20Vite-125a4d">
+  <img alt="llm" src="https://img.shields.io/badge/LLM-Google%20Gemini-e9c46a">
+  <img alt="integrations" src="https://img.shields.io/badge/integrations-GitHub%20%C2%B7%20Teams-1b9c85">
+</p>
 
-## Tech Stack
+**ProjectPulse** is an AI project-coordination platform for teams that spin up many repos and need to stay on top of delivery. It uses **Google Gemini** to scaffold a runnable project skeleton, **PyGithub** to create the GitHub repo, add collaborators and wire up webhooks, then watches incoming commits to track contributor activity and generate executive-style progress reports — optionally pushed to **Microsoft Teams**. The backend is **FastAPI + SQLAlchemy + SQLite**; the dashboard is **React + Vite**.
 
-- **Backend**: FastAPI + SQLite + SQLAlchemy
-- **Frontend**: React + Vite
-- **Integrations**: GitHub API, Google Gemini API, Microsoft Teams Webhooks
+> From "create a project" to "here's the delivery report" — the busywork of coordinating engineering work, automated.
 
-## Setup
+---
 
-### Prerequisites
+## ✨ Features
 
-- Python 3.9+
-- Node.js 18+
-- GitHub Personal Access Token ([Create one](https://github.com/settings/tokens))
-- Google Gemini API Key ([Get one](https://makersuite.google.com/app/apikey))
+- 🤖 **AI project scaffolding** — Gemini (`gemini-2.0-flash`) generates a minimal runnable project skeleton (directory structure + file contents) from a name, type, and free-form requirements.
+- 🔗 **GitHub automation** — creates the repository, adds assignees as collaborators, and pushes the generated files via the GitHub API.
+- 📊 **Commit & contributor tracking** — a webhook endpoint ingests push events and tallies per-author commit counts in the database.
+- 📝 **Progress reports** — Gemini reads the repo README plus commit history and writes a progress summary (full and concise variants), including suggested next steps and last-commit impact analysis.
+- 🔎 **Repository analyzer** — point it at any GitHub URL (`/api/progress/analyze`) to pull the commit log, contributor stats, and an AI summary on demand.
+- 💬 **Teams notifications** — optionally sends project-creation and summary updates to a Microsoft Teams channel via incoming webhook.
 
-### Backend Setup
+## 🏗️ Architecture
 
-1. Navigate to backend directory:
+```
+┌──────────────────────┐
+│   Frontend (React +  │
+│   Vite, port 3000)   │
+└───────────┬──────────┘
+            │ HTTP / axios  (proxy /api -> :8000)
+            ▼
+┌─────────────────────────────────────────────┐
+│            FastAPI backend (:8000)           │
+│  ┌───────────────────────────────────────┐  │
+│  │  /api/projects   /api/github-webhook   │  │
+│  │  /api/.../summary   /api/progress/*    │  │
+│  └───────┬───────────────────────────────┘  │
+│          │                                   │
+│   ┌──────▼──────┬──────────┬──────────────┐  │
+│   │ LLM service │  GitHub   │    Teams     │  │
+│   │  (Gemini)   │ (PyGithub)│  (webhooks)  │  │
+│   └──────┬──────┴──────────┴──────────────┘  │
+│          │                                   │
+│   ┌──────▼───────────────────────────────┐  │
+│   │  SQLAlchemy ORM  ->  SQLite database  │  │
+│   │  projects · contributions · summaries │  │
+│   └───────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+```
+
+## 🚀 Run it
+
+**Prerequisites:** Python 3.9+, Node.js 18+, a [GitHub Personal Access Token](https://github.com/settings/tokens) (`repo`, `admin:repo_hook`), and a [Google Gemini API key](https://makersuite.google.com/app/apikey).
+
+### Backend
+
 ```bash
 cd backend
-```
-
-2. Create virtual environment:
-```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+python main.py                    # serves http://localhost:8000
 ```
 
-4. Create `.env` file:
-```bash
-cp .env.example .env
-```
+Interactive API docs are available at `http://localhost:8000/docs`.
 
-5. Edit `.env` with your credentials:
-```
-GITHUB_TOKEN=ghp_your_token_here
-GEMINI_API_KEY=your_gemini_key_here
-WEBHOOK_URL=http://your-server.com/api/github-webhook
-```
+### Frontend
 
-6. Run the server:
-```bash
-python main.py
-```
-
-The API will be available at `http://localhost:8000`
-
-### Frontend Setup
-
-1. Navigate to frontend directory:
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
+npm run dev                       # serves http://localhost:3000
 ```
 
-3. Create `.env` file (optional):
-```bash
-echo "VITE_API_URL=http://localhost:8000" > .env
+## 🔧 Configuration
+
+Create a `.env` file in `backend/` with your credentials:
+
+```env
+GITHUB_TOKEN=ghp_your_token_here
+GEMINI_API_KEY=your_gemini_key_here
+WEBHOOK_URL=https://your-server.com/api/github-webhook
 ```
 
-4. Run development server:
-```bash
-npm run dev
-```
+The frontend can optionally set `VITE_API_URL`; by default Vite proxies `/api` to `http://localhost:8000`.
 
-The UI will be available at `http://localhost:3000`
+For local webhook testing, expose the backend with ngrok and use the resulting URL:
 
-## API Documentation
-
-### Endpoints
-
-#### Create Project
-```http
-POST /api/projects
-Content-Type: application/json
-
-{
-  "project_name": "my-project",
-  "project_type": "web",
-  "assignees": ["user1", "user2"],
-  "teams_webhook": "https://outlook.office.com/webhook/..."
-}
-```
-
-**Response:**
-```json
-{
-  "id": 1,
-  "name": "my-project",
-  "type": "web",
-  "repo_url": "https://github.com/username/my-project",
-  "created_at": "2025-11-12T10:30:00"
-}
-```
-
-#### GitHub Webhook
-```http
-POST /api/github-webhook
-Content-Type: application/json
-
-{
-  "repository": {...},
-  "commits": [...]
-}
-```
-
-#### Get Summary
-```http
-GET /api/projects/{project_id}/summary
-```
-
-#### Generate New Summary
-```http
-POST /api/projects/{project_id}/generate-summary?teams_webhook=https://...
-```
-
-#### List Projects
-```http
-GET /api/projects
-```
-
-## Usage
-
-1. Open the frontend at `http://localhost:3000`
-2. Fill in the project creation form:
-   - **Project Name**: Choose a unique name
-   - **Project Type**: Select from dropdown (web, api, mobile, etc.)
-   - **Assignees**: Enter GitHub usernames (comma-separated)
-   - **Teams Webhook**: Optional Teams webhook URL for notifications
-3. Click "Create Project"
-4. The system will:
-   - Generate project structure using AI
-   - Create GitHub repository
-   - Add collaborators
-   - Push initial files
-   - Send Teams notification (if webhook provided)
-
-## Database Schema
-
-### projects
-- `id`: Primary key
-- `name`: Project name
-- `type`: Project type
-- `repo_url`: GitHub repository URL
-- `created_at`: Creation timestamp
-
-### contributions
-- `id`: Primary key
-- `project_id`: Foreign key to projects
-- `author`: Developer name
-- `email`: Developer email
-- `commit_count`: Number of commits
-
-### summaries
-- `id`: Primary key
-- `project_id`: Foreign key to projects
-- `summary_text`: AI-generated summary
-- `timestamp`: Generation timestamp
-
-## Architecture
-
-```
-┌─────────────┐
-│   Frontend  │
-│   (React)   │
-└──────┬──────┘
-       │ HTTP
-       ▼
-┌─────────────────────────────────┐
-│      FastAPI Backend            │
-│  ┌──────────────────────────┐  │
-│  │   API Endpoints          │  │
-│  └───────┬──────────────────┘  │
-│          │                      │
-│  ┌───────▼──────┬───────┬─────┐│
-│  │ LLM Service  │GitHub │Teams││
-│  │  (OpenAI)    │  API  │ API ││
-│  └──────────────┴───────┴─────┘│
-│          │                      │
-│  ┌───────▼──────────────────┐  │
-│  │    SQLite Database       │  │
-│  └──────────────────────────┘  │
-└─────────────────────────────────┘
-```
-
-## Troubleshooting
-
-### GitHub Token Permissions
-Ensure your token has these scopes:
-- `repo` (full control)
-- `admin:repo_hook` (webhook management)
-
-### Gemini API Limits
-If you hit rate limits or quota issues, the system provides fallback templates.
-
-### Webhook Setup
-For local development, use ngrok to expose your localhost:
 ```bash
 ngrok http 8000
-# Use the ngrok URL in .env: WEBHOOK_URL=https://xxx.ngrok.io/api/github-webhook
+# WEBHOOK_URL=https://xxxx.ngrok.io/api/github-webhook
 ```
 
-## License
+## 📦 API surface
 
-MIT
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/projects` | Scaffold + create a new project repo |
+| `GET`  | `/api/projects` | List tracked projects |
+| `POST` | `/api/github-webhook` | Ingest push events, tally contributions |
+| `GET`  | `/api/projects/{id}/summary` | Latest stored progress summary |
+| `POST` | `/api/projects/{id}/generate-summary` | Generate a fresh AI summary (optional Teams push) |
+| `POST` | `/api/progress/analyze` | Analyze any GitHub repo URL on demand |
+| `GET`  | `/api/progress/health` | Health check for the analyzer |
 
+## 🗃️ Data model
+
+- **projects** — `id`, `name`, `type`, `repo_url`, `requirements`, `created_at`
+- **contributions** — per-author `commit_count` per project
+- **summaries** — AI-generated `summary_text` with timestamp
+
+## 🧪 Tests
+
+Backend tests live in `backend/tests/` (webhook handling, progress analyzer, progress-service units):
+
+```bash
+cd backend
+pytest
+```
